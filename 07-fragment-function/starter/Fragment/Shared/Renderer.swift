@@ -45,7 +45,9 @@ class Renderer: NSObject {
 
     var modelPipelineState: MTLRenderPipelineState!
     var quadPipelineState: MTLRenderPipelineState!
-
+    
+    let depthStencilState: MTLDepthStencilState?
+    
     lazy var model: Model = .init(device: Renderer.device, name: "train.usd")
 
     var timer: Float = 0
@@ -76,6 +78,7 @@ class Renderer: NSObject {
         pipelineDescriptor.fragmentFunction = fragmentFunction
         pipelineDescriptor.colorAttachments[0].pixelFormat =
             metalView.colorPixelFormat
+        pipelineDescriptor.depthAttachmentPixelFormat = .depth32Float
         do {
             quadPipelineState =
                 try device.makeRenderPipelineState(
@@ -89,7 +92,10 @@ class Renderer: NSObject {
         } catch {
             fatalError(error.localizedDescription)
         }
+        
         self.options = options
+        self.depthStencilState = Renderer.buildDepthStencilState()
+        
         super.init()
         metalView.clearColor = MTLClearColor(
             red: 1.0,
@@ -97,7 +103,16 @@ class Renderer: NSObject {
             blue: 0.9,
             alpha: 1.0)
         metalView.delegate = self
+        metalView.depthStencilPixelFormat = .depth32Float
         mtkView(metalView, drawableSizeWillChange: metalView.bounds.size)
+    }
+    
+    static func buildDepthStencilState() -> MTLDepthStencilState? {
+        let descriptor = MTLDepthStencilDescriptor()
+        descriptor.depthCompareFunction = .less
+        descriptor.isDepthWriteEnabled = true
+        
+        return Renderer.device.makeDepthStencilState(descriptor: descriptor)
     }
 }
 
@@ -151,6 +166,8 @@ extension Renderer: MTKViewDelegate {
         else {
             return
         }
+        
+        renderEncoder.setDepthStencilState(depthStencilState)
         
         renderEncoder.setFragmentBytes(&params, length: MemoryLayout<Uniforms>.stride, index: 12)
 
