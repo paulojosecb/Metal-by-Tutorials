@@ -6,6 +6,14 @@ enum TextureController {
     static func loadTexture(filename: String) throws -> MTLTexture? {
         let textureLoader = MTKTextureLoader(device: Renderer.device)
         
+        if let texture = try? textureLoader.newTexture(name: filename,
+                                                       scaleFactor: 1,
+                                                       bundle: Bundle.main,
+                                                       options: nil) {
+            print("loaded texture: \(filename)")
+            return texture
+        }
+        
         let textureLoaderOptions: [MTKTextureLoader.Option: Any] = [
             .origin: MTKTextureLoader.Origin.bottomLeft,
             .SRGB: false,
